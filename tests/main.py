@@ -1,4 +1,3 @@
-import xgui
+import ctypes
 
-g = xgui.Gui("james")
-g.create_window()
+library = ctypes.CDLL("../guimodulewrapped.dll")

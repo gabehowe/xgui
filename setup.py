@@ -12,16 +12,16 @@ def path_to_build_folder():
     dir_name = f.format(dirname='lib',
                         platform=sysconfig.get_platform(),
                         version=sys.version_info)
-    return os.path.join('build', dir_name, 'xgui')
+    return os.path.join('build', dir_name, 'xguiold')
 
 
-module1 = Extension(name="xgui.gui", sources=['src/xgui/xguimodule.c'], libraries=['User32'],
+module1 = Extension(name="xguiold.gui", sources=['src/xguiold/guimodule.c'], libraries=['Gdi32','User32'],
                     library_dirs=[os.path.join(path_to_build_folder()), 'lib'],
                     extra_link_args=[])
 setup(
     include_package_data=True,
     package_data={"gui": ["lib/*.lib", '*.dll']},
-    name='xgui',
+    name='xguiold',
     ext_modules=[module1],
     version='0.1.0',
     packages=find_packages(where='src'),

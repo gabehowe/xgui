@@ -14,3 +14,4 @@ src/xgui/lib/User32.Lib
 src/xgui/xgui.cp311-win_amd64.pyd
 venv/
 *.pyd
+/src/xgui/lib/Gdi32.Lib

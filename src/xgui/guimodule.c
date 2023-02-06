@@ -13,15 +13,16 @@ typedef struct {
     int y;
     int width;
     int height;
+    PyObject *background_color;
 
 } GuiObject;
 
 static void Gui_dealloc(GuiObject *self) {
     Py_XDECREF(self->window_name);
     Py_XDECREF(self->window_class);
+    Py_XDECREF(self->background_color);
     Py_TYPE(self)->tp_free((PyObject *) self);
 }
-
 
 static PyObject *Gui_new(PyTypeObject *type, PyObject *args, PyObject *kwds) {
     GuiObject *self;
@@ -39,6 +40,12 @@ static PyObject *Gui_new(PyTypeObject *type, PyObject *args, PyObject *kwds) {
             Py_DECREF(self);
             return NULL;
         }
+
+        self->background_color = Py_BuildValue("iii", 255, 255, 255);
+        if (self->background_color == NULL) {
+            Py_DECREF(self);
+            return NULL;
+        }
         self->x = 100;
         self->y = 100;
         self->width = 400;
@@ -48,10 +55,10 @@ static PyObject *Gui_new(PyTypeObject *type, PyObject *args, PyObject *kwds) {
 }
 
 static int Gui_init(GuiObject *self, PyObject *args, PyObject *kwds) {
-    static char *kwlist[] = {"window_name", "window_class", "x", "y", "width", "height", NULL};
-    PyObject *window_name = NULL, *window_class = NULL, *tmp;
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O|Oiiii", kwlist, &window_name, &window_class,
-                                     &self->x, &self->y, &self->width, &self->height)) {
+    static char *kwlist[] = {"window_name", "window_class", "x", "y", "width", "height", "background_color", NULL};
+    PyObject *window_name = NULL, *window_class = NULL, *background_color = NULL, *tmp;
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O|Oiiii(OOO)", kwlist, &window_name, &window_class,
+                                     &self->x, &self->y, &self->width, &self->height, &background_color)) {
         PyErr_BadArgument();
         return -1;
     }
@@ -65,6 +72,12 @@ static int Gui_init(GuiObject *self, PyObject *args, PyObject *kwds) {
         self->window_class = window_class;
         Py_XDECREF(tmp);
     }
+
+    if (background_color) {
+        tmp = self->background_color;
+        self->background_color = background_color;
+        Py_XDECREF(tmp);
+    }
     return 0;
 }
 
@@ -76,8 +89,17 @@ static LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM l
             return 0;
         case WM_PAINT: {
             PAINTSTRUCT ps;
+            printf("l92");
+            PyObject *R = PyTuple_GetItem(self->background_color, 0);
+            PyObject *G = PyTuple_GetItem(self->background_color, 1);
+            PyObject *B = PyTuple_GetItem(self->background_color, 2);
+            printf("Pre-segfault");
+
+            HBRUSH hbrush = CreateSolidBrush(RGB(PyLong_AsLong(R), PyLong_AsLong(G), PyLong_AsLong(B)));
+
+            printf("l92");
             HDC hdc = BeginPaint(hwnd, &ps);
-            FillRect(hdc, &ps.rcPaint, (HBRUSH) (COLOR_WINDOW + 1));
+            FillRect(hdc, &ps.rcPaint, hbrush);
             EndPaint(hwnd, &ps);
         }
             return 0;
@@ -123,9 +145,7 @@ static PyObject *Gui_create_window(GuiObject *self, PyObject *Py_UNUSED) {
     ShowWindow(hwnd, SW_SHOWNORMAL);
     UpdateWindow(hwnd);
 
-    printf("l128");
     SetPropA(hwnd, "GuiObject", self);
-    printf("l129");
     MSG msg;
     while (GetMessage(&msg, hwnd, 0, 0) > 0) {
         TranslateMessage(&msg);
@@ -141,12 +161,14 @@ static PyMethodDef GuiMethods[] = {
         {NULL, NULL, 0,                                                                  NULL}        /* Sentinel */
 };
 static PyMemberDef GuiMembers[] = {
-        {"window_name",  T_OBJECT_EX, offsetof(GuiObject, window_name),  0, "Name of the window"},
-        {"window_class", T_OBJECT_EX, offsetof(GuiObject, window_class), 0, "Window classname"},
-        {"x",            T_INT,       offsetof(GuiObject, x),            0, "X coordinate of the window"},
-        {"y",            T_INT,       offsetof(GuiObject, y),            0, "Y coordinate of the window"},
-        {"width",        T_INT,       offsetof(GuiObject, width),        0, "Width of the window"},
-        {"height",       T_INT,       offsetof(GuiObject, height),       0, "Height of the window"},
+        {"window_name",      T_OBJECT_EX, offsetof(GuiObject, window_name),  0, "Name of the window"},
+        {"window_class",     T_OBJECT_EX, offsetof(GuiObject, window_class), 0, "Window classname"},
+        {"x",                T_INT,       offsetof(GuiObject, x),            0, "X coordinate of the window"},
+        {"y",                T_INT,       offsetof(GuiObject, y),            0, "Y coordinate of the window"},
+        {"width",            T_INT,       offsetof(GuiObject, width),        0, "Width of the window"},
+        {"height",           T_INT,       offsetof(GuiObject, height),       0, "Height of the window"},
+        {"background_color", T_OBJECT_EX, offsetof(GuiObject,
+                                                   background_color),        0, "The background color of the window"},
         {NULL}
 };
 
@@ -162,8 +184,8 @@ static PyTypeObject GuiType = {
         .tp_dealloc = (destructor) Gui_dealloc,
         .tp_methods = GuiMethods,
         .tp_members = GuiMembers,
-};
 
+};
 
 static PyMethodDef XguiMethods[] = {
         {NULL, NULL, 0, NULL}        /* Sentinel */
