@@ -1,3 +1,4 @@
-import xgui.xgui as xgui
+import xgui
 
-xgui.init("James")
+g = xgui.Gui("james")
+g.create_window()

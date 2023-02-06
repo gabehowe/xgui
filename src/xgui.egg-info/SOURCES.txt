@@ -1,8 +1,10 @@
+README.md
 pyproject.toml
 setup.cfg
 setup.py
 src/xgui/xguimodule.c
 src/xgui/__init__.py
+src/xgui/pituooy.py
 src/xgui/xguimodule.c
 src/xgui.egg-info/PKG-INFO
 src/xgui.egg-info/SOURCES.txt
